@@ -68,10 +68,7 @@ for i, (label, name) in enumerate(products):
 
     with cols[2]:
         fact_key = f"fact_{i}"
-        if fact_key not in st.session_state:
-            st.session_state[fact_key] = 0.0
-
-        fact = st.number_input("מלאי בפועל", value=st.session_state[fact_key], step=0.5, key=fact_key)
+        fact = st.number_input("מלאי בפועל", step=0.5, key=fact_key)
 
         btn_cols = st.columns(2)
         with btn_cols[0]:
@@ -89,9 +86,8 @@ for i, (label, name) in enumerate(products):
                     st.error(f"❌ שגיאה בשמירה: {e}")
         with btn_cols[1]:
             if st.button("בטל", key=f"cancel_fact_{i}"):
-                st.warning(f"🔁 מלאי לא נשמר עבור: {name}")
-                # Вместо изменения session_state напрямую, обновляем через input
-                st.experimental_rerun()
+                st.warning(f"🔁 לא נשמר. יש לרענן את הדף לאיפוס.")
+                st.stop()
 
     with cols[3]:
         st.number_input("תחזית רכישה (AI)", value=0.0, step=0.5, disabled=True, key=f"ai_order_{i}")
@@ -143,7 +139,7 @@ if st.button("📦 הפקת דוח מלאי נוכחי"):
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
         if "timestamp" not in df.columns:
-            st.warning("🔴 חסר עמודת timestamp. ודא שכותרות הגיליון קיימות.")
+            st.warning("🔴 חסרה עמודת timestamp. ודא שהכותרות קיימות.")
         elif df.empty:
             st.info("📭 אין נתונים זמינים.")
         else:

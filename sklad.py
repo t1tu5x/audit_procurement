@@ -18,7 +18,7 @@ except Exception as e:
 # Интерфейс
 st.set_page_config(layout="wide")
 st.markdown("<h1 style='text-align:right; font-size:42px;'>📦 מחסן מלון גולן – ירקות ופירות 🧑‍🍳</h1>", unsafe_allow_html=True)
-st.markdown("<h3 style='text-align:right; color:gray;'>שף יהודה</h3>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:right; font-size:16px; color:gray;'>שף יהודה</p>", unsafe_allow_html=True)
 
 products = [
     ("🍅 עגבניות", "עגבניות"),

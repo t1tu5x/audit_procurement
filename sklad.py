@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date
+from datetime import datetime
 from zoneinfo import ZoneInfo
 from google.oauth2.service_account import Credentials
 import gspread
@@ -14,7 +14,9 @@ SCOPE = [
 try:
     creds = Credentials.from_service_account_info(st.secrets["gsheets"], scopes=SCOPE)
     client = gspread.authorize(creds)
-    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1tQpSEG0P2GxeVyz5AAwkBQs4b96jTrtxviKU4_d0BX8/edit").sheet1
+    sheet = client.open_by_url(
+        "https://docs.google.com/spreadsheets/d/1tQpSEG0P2GxeVyz5AAwkBQs4b96jTrtxviKU4_d0BX8/edit"
+    ).sheet1
 except Exception as e:
     st.error("❌ שגיאה בחיבור ל-Google Sheets")
     st.stop()
@@ -53,7 +55,7 @@ st.markdown("""
 <h3 style='text-align: right; font-size: 14px;'>שף יהודה</h3>
 """, unsafe_allow_html=True)
 
-# ---------- Получение данных из таблицы ----------
+# ---------- Получение текущих данных ----------
 try:
     records = sheet.get_all_records()
     df = pd.DataFrame(records) if records else pd.DataFrame(columns=["timestamp", "date", "product", "fact", "order", "type"])
@@ -61,7 +63,7 @@ except Exception as e:
     st.warning("⚠️ שגיאה בקריאת הנתונים מהטבלה")
     df = pd.DataFrame(columns=["timestamp", "date", "product", "fact", "order", "type"])
 
-# ---------- Интерфейс для каждого продукта ----------
+# ---------- Интерфейс товаров ----------
 for i, (product, emoji) in enumerate(PRODUCTS):
     st.markdown(f"<h2 style='text-align:right;font-size:24px;'>{emoji} {product}</h2>", unsafe_allow_html=True)
 
@@ -85,19 +87,20 @@ for i, (product, emoji) in enumerate(PRODUCTS):
         order_key = f"order_{i}"
         st.number_input("", step=0.5, format="%.2f", key=order_key)
 
-    col_save, col_cancel, col_order_confirm, col_order_cancel = st.columns(4)
+    # ---------- Горизонтальные кнопки (4) ----------
+    col_fact_save, col_fact_cancel, col_order_confirm, col_order_cancel = st.columns([1, 1, 1, 1])
 
-    with col_save:
+    with col_fact_save:
         if st.button("שמור", key=f"save_{i}"):
             ts = datetime.now(ZoneInfo("Asia/Jerusalem"))
             sheet.append_row([ts.isoformat(), ts.date().isoformat(), product, st.session_state[fact_key], 0, "fact"])
             st.success("✅ נשמר")
 
-    with col_cancel:
+    with col_fact_cancel:
         if st.button("בטל", key=f"cancel_{i}"):
             ts = datetime.now(ZoneInfo("Asia/Jerusalem"))
             sheet.append_row([ts.isoformat(), ts.date().isoformat(), product, 0, 0, "cancel_fact"])
-            st.info("🔁 לא נשמר. יש לרענן את הדף לאיפוס.")
+            st.info("🚫 בוטל מלאי")
 
     with col_order_confirm:
         if st.button("✔", key=f"confirm_{i}"):
@@ -113,7 +116,7 @@ for i, (product, emoji) in enumerate(PRODUCTS):
 
     st.markdown("---")
 
-# ---------- Отчёт по дате ----------
+# ---------- Действие: Отчёт на сегодня ----------
 st.subheader("📋 דוח מלאי")
 if st.button("הפק דוח"):
     try:

@@ -9,7 +9,8 @@ SCOPE = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis
 try:
     creds = Credentials.from_service_account_info(st.secrets["gsheets"], scopes=SCOPE)
     client = gspread.authorize(creds)
-    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1OX_vT9Qcb51niAQ8ACcB5xTs9LuqNWrQOwAxZpJNLyw/edit").sheet1
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1hcxv4gQRZaGRaeu9fRuA1SILbkJlRSxdLvcMFuXU4Aw/edit").sheet1
+    
 except Exception as e:
     st.error("❌ Ошибка подключения к Google Sheets")
     import traceback

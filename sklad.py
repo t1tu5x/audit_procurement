@@ -4,27 +4,18 @@ from datetime import datetime
 from google.oauth2.service_account import Credentials
 import gspread
 
-# ---------- Авторизация ----------
-SCOPE = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
+# Авторизация
+SCOPE = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
 try:
-    creds = Credentials.from_service_account_info(
-        st.secrets["gsheets"], scopes=SCOPE
-    )
+    creds = Credentials.from_service_account_info(st.secrets["gsheets"], scopes=SCOPE)
     client = gspread.authorize(creds)
-    sheet = client.open_by_url(
-        "https://docs.google.com/spreadsheets/d/1tQpSEG0P2GxeVyz5AAwkBQs4b96jTrtxviKU4_d0BX8/edit"
-    ).sheet1
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1tQpSEG0P2GxeVyz5AAwkBQs4b96jTrtxviKU4_d0BX8/edit").sheet1
 except Exception as e:
-    import traceback
     st.error("❌ שגיאה בחיבור ל-Google Sheets")
-    st.text(traceback.format_exc())
     st.stop()
 
-# ---------- Настройки ----------
+# Интерфейс
 st.set_page_config(layout="wide")
 st.title("👨‍🍳 ניהול מלאי למטבח מקצועי")
 
@@ -57,9 +48,8 @@ if "rows_to_order" not in st.session_state:
     st.session_state["rows_to_order"] = []
 
 for i, (label, name) in enumerate(products):
-    st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
+    st.markdown("------")
     cols = st.columns([3, 2, 3, 2, 2, 1, 1])
-
     with cols[0]:
         st.markdown(f"**{label}**")
 
@@ -70,8 +60,8 @@ for i, (label, name) in enumerate(products):
         fact_key = f"fact_{i}"
         fact = st.number_input("מלאי בפועל", step=0.5, key=fact_key)
 
-        btn_cols = st.columns(2)
-        with btn_cols[0]:
+        bcol1, bcol2 = st.columns(2)
+        with bcol1:
             if st.button("שמור", key=f"save_fact_{i}"):
                 now = datetime.now()
                 try:
@@ -84,10 +74,9 @@ for i, (label, name) in enumerate(products):
                     st.success(f"📝 נשמר מלאי: {name} = {fact}")
                 except Exception as e:
                     st.error(f"❌ שגיאה בשמירה: {e}")
-        with btn_cols[1]:
+        with bcol2:
             if st.button("בטל", key=f"cancel_fact_{i}"):
-                st.warning(f"🔁 לא נשמר. יש לרענן את הדף לאיפוס.")
-                st.stop()
+                st.info(f"🔁 לא נשמר. ניתן לעדכן שוב אם צריך.")
 
     with cols[3]:
         st.number_input("תחזית רכישה (AI)", value=0.0, step=0.5, disabled=True, key=f"ai_order_{i}")
@@ -109,9 +98,10 @@ for i, (label, name) in enumerate(products):
 
     with cols[6]:
         if st.button("✖", key=f"cancel_order_{name}"):
-            st.session_state[f"order_{i}"] = 0.0
+            st.warning(f"❌ הרכישה בוטלה עבור {name}")
+            st.experimental_rerun()
 
-# ---------- דוח רכישה ----------
+# דוח רכישה
 st.markdown("---")
 if st.button("📤 הפקת דוח רכישה"):
     if not st.session_state.rows_to_order:
@@ -132,14 +122,14 @@ if st.button("📤 הפקת דוח רכישה"):
 
         st.session_state.rows_to_order = []
 
-# ---------- דוח מלאי נוכחי ----------
+# דוח מלאי
 st.markdown("---")
 if st.button("📦 הפקת דוח מלאי נוכחי"):
     try:
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
         if "timestamp" not in df.columns:
-            st.warning("🔴 חסרה עמודת timestamp. ודא שהכותרות קיימות.")
+            st.warning("🔴 חסרה עמודת timestamp.")
         elif df.empty:
             st.info("📭 אין נתונים זמינים.")
         else:

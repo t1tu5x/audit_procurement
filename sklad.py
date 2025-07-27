@@ -74,9 +74,24 @@ for i, (label, name) in enumerate(products):
         fact_key = f"fact_{i}"
         fact = st.number_input("מלאי בפועל", value=0.0, step=0.5, key=fact_key)
 
-        col_save, col_cancel = st.columns(2)
-        with col_save:
+        btn_cols = st.columns([1, 1])
+        with btn_cols[0]:
             if st.button("שמור", key=f"save_fact_{i}"):
+                now = datetime.now()
+                try:
+                    sheet.append_row([
+                        now.strftime("%Y-%m-%d %H:%M:%S"),
+                        name,
+                        fact,
+                        0.0
+                    ])
+                    st.success(f"📝 נשמר מלאי: {name} = {fact}")
+                except Exception as e:
+                    st.error(f"❌ שגיאה בשמירה: {e}")
+        with btn_cols[1]:
+            if st.button("בטל", key=f"cancel_fact_{i}"):
+                st.session_state[fact_key] = 0.0
+
                 now = datetime.now()
                 try:
                     sheet.append_row([

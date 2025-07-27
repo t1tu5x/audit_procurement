@@ -1,133 +1,141 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from google.oauth2.service_account import Credentials
 import gspread
 
-# ---------- Авторизация ----------
-SCOPE = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
+# Авторизация
+SCOPE = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
 try:
     creds = Credentials.from_service_account_info(st.secrets["gsheets"], scopes=SCOPE)
     client = gspread.authorize(creds)
-    sheet = client.open_by_url(
-        "https://docs.google.com/spreadsheets/d/1tQpSEG0P2GxeVyz5AAwkBQs4b96jTrtxviKU4_d0BX8/edit"
-    ).sheet1
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1tQpSEG0P2GxeVyz5AAwkBQs4b96jTrtxviKU4_d0BX8/edit").sheet1
 except Exception as e:
     st.error("❌ שגיאה בחיבור ל-Google Sheets")
     st.stop()
 
-# ---------- Конфигурация ----------
-PRODUCTS = [
-    ("עגבניות", "🍅"),
-    ("מלפפונים", "🥒"),
-    ("כרוב", "🥬"),
-    ("גזר", "🥕"),
-    ("בצל", "🧅"),
-    ("פלפל", "🌶️"),
-    ("חציל", "🍆"),
-    ("קישוא", "🥒"),
-    ("שומר", "🌿"),
-    ("קולורבי", "🥦"),
-    ("עגבניות שרי", "🍅"),
-    ("דלת", "🎃"),
-    ("סלק", "🥬"),
-    ("באטט", "🍠"),
-    ("תפוחי אדמה", "🥔"),
-    ("בצל סגול", "🧅"),
-    ("שום", "🧄"),
-    ("תפוחים", "🍎"),
-    ("תפוזים", "🍊"),
-    ("תפוזים קטנים", "🍊"),
-    ("בננות", "🍌"),
-    ("שפרסקים", "🍑"),
+# Интерфейс
+st.set_page_config(layout="wide")
+st.title("👨‍🍳 ניהול מלאי למטבח מקצועי")
+
+products = [
+    ("🍅 עגבניות", "עגבניות"),
+    ("🥒 מלפפונים", "מלפפונים"),
+    ("🥬 כרוב", "כרוב"),
+    ("🥕 גזר", "גזר"),
+    ("🧅 בצל", "בצל"),
+    ("🫑 פלפל", "פלפל"),
+    ("🍆 חציל", "חציל"),
+    ("🟢 קישוא", "קישוא"),
+    ("🌿 שומר", "שומר"),
+    ("🥦 קולורבי", "קולורבי"),
+    ("🍒 עגבניות שרי", "עגבניות שרי"),
+    ("🎃 דלעת", "דלעת"),
+    ("🟥 סלק", "סלק"),
+    ("🍠 בטטה", "בטטה"),
+    ("🥔 תפוחי אדמה", "תפוחי אדמה"),
+    ("🧅 בצל סגול", "בצל סגול"),
+    ("🧄 שום", "שום"),
+    ("🍏 תפוחים", "תפוחים"),
+    ("🍊 תפוזים", "תפוזים"),
+    ("🍊 קלמנטינות", "קלמנטינות"),
+    ("🍌 בננות", "בננות"),
+    ("🍑 אפרסקים", "אפרסקים")
 ]
 
-st.set_page_config(layout="wide")
+if "rows_to_order" not in st.session_state:
+    st.session_state["rows_to_order"] = []
 
-# ---------- Заголовок ----------
-st.markdown("""
-<h1 style='text-align: right; font-size: 36px;'>מחסן מלון גולן 🍅🍋🌿</h1>
-<h3 style='text-align: right; font-size: 14px;'>שף יהודה</h3>
-""", unsafe_allow_html=True)
+for i, (label, name) in enumerate(products):
+    st.markdown("------")
+    cols = st.columns([3, 2, 3, 2, 2, 1, 1])
+    with cols[0]:
+        st.markdown(f"<h2 style='text-align:right; font-size:32px;'>{label}</h2>", unsafe_allow_html=True)
 
-# ---------- Получение текущих данных ----------
-try:
-    records = sheet.get_all_records()
-    df = pd.DataFrame(records) if records else pd.DataFrame(columns=["timestamp", "date", "product", "fact", "order", "type"])
-except Exception as e:
-    st.warning("⚠️ שגיאה בקריאת הנתונים מהטבלה")
-    df = pd.DataFrame(columns=["timestamp", "date", "product", "fact", "order", "type"])
+    with cols[1]:
+        st.number_input("מלאי צפוי (AI)", value=0.0, step=0.5, disabled=True, key=f"ai_stock_{i}")
 
-# ---------- Интерфейс товаров ----------
-for i, (product, emoji) in enumerate(PRODUCTS):
-    st.markdown(f"<h2 style='text-align:right;font-size:24px;'>{emoji} {product}</h2>", unsafe_allow_html=True)
-
-    col1, col2, col3, col4 = st.columns([1, 2, 1.5, 2])
-
-    with col1:
-        st.text("מלאי צפוי (AI)")
-        st.number_input("", value=0.0, step=0.5, disabled=True, key=f"expected_{i}")
-
-    with col2:
-        st.text("מלאי בפועל")
+    with cols[2]:
         fact_key = f"fact_{i}"
-        st.number_input(" ", step=0.5, format="%.2f", key=fact_key)
+        fact = st.number_input("מלאי בפועל", step=0.5, key=fact_key)
 
-    with col3:
-        st.text("תחזית רכישה (AI)")
-        st.number_input("", value=0.0, step=0.5, disabled=True, key=f"rec_{i}")
+        bcol1, bcol2 = st.columns(2)
+        with bcol1:
+            if st.button("שמור", key=f"save_fact_{i}"):
+                now = datetime.now()
+                try:
+                    sheet.append_row([
+                        now.strftime("%Y-%m-%d %H:%M:%S"),
+                        name,
+                        fact,
+                        0.0
+                    ])
+                    st.success(f"📝 נשמר מלאי: {name} = {fact}")
+                except Exception as e:
+                    st.error(f"❌ שגיאה בשמירה: {e}")
+        with bcol2:
+            if st.button("בטל", key=f"cancel_fact_{i}"):
+                st.info(f"🔁 לא נשמר. ניתן לעדכן שוב אם צריך.")
 
-    with col4:
-        st.text("רכישה נדרשת")
-        order_key = f"order_{i}"
-        st.number_input("", step=0.5, format="%.2f", key=order_key)
+    with cols[3]:
+        st.number_input("תחזית רכישה (AI)", value=0.0, step=0.5, disabled=True, key=f"ai_order_{i}")
 
-    # ---------- Горизонтальные кнопки (4) ----------
-    col_fact_save, col_fact_cancel, col_order_confirm, col_order_cancel = st.columns([1, 1, 1, 1])
+    with cols[4]:
+        st.number_input("רכישה נדרשת", value=0.0, step=0.5, key=f"order_{i}")
 
-    with col_fact_save:
-        if st.button("שמור", key=f"save_{i}"):
-            ts = datetime.now(ZoneInfo("Asia/Jerusalem"))
-            sheet.append_row([ts.isoformat(), ts.date().isoformat(), product, st.session_state[fact_key], 0, "fact"])
-            st.success("✅ נשמר")
+    with cols[5]:
+        if st.button("✔", key=f"confirm_{name}"):
+            now = datetime.now()
+            row = [
+                now.strftime("%Y-%m-%d %H:%M:%S"),
+                name,
+                st.session_state[f"fact_{i}"],
+                st.session_state[f"order_{i}"]
+            ]
+            st.session_state.rows_to_order.append(row)
+            st.success(f"✅ נוסף לרכישה: {name}")
 
-    with col_fact_cancel:
-        if st.button("בטל", key=f"cancel_{i}"):
-            ts = datetime.now(ZoneInfo("Asia/Jerusalem"))
-            sheet.append_row([ts.isoformat(), ts.date().isoformat(), product, 0, 0, "cancel_fact"])
-            st.info("🚫 בוטל מלאי")
+    with cols[6]:
+        if st.button("✖", key=f"cancel_order_{name}"):
+            st.warning(f"❌ הרכישה בוטלה עבור {name}")
+            st.experimental_rerun()
 
-    with col_order_confirm:
-        if st.button("✔", key=f"confirm_{i}"):
-            ts = datetime.now(ZoneInfo("Asia/Jerusalem"))
-            sheet.append_row([ts.isoformat(), ts.date().isoformat(), product, 0, st.session_state[order_key], "order"])
-            st.success(f"✅ נוסף לרכישה: {product}")
+# דוח רכישה
+st.markdown("---")
+if st.button("📤 הפקת דוח רכישה"):
+    if not st.session_state.rows_to_order:
+        st.warning("אין שורות להזמנה.")
+    else:
+        st.success("🧾 להלן המוצרים להזמנה:")
+        df_report = pd.DataFrame(
+            st.session_state.rows_to_order,
+            columns=["timestamp", "product", "fact", "order"]
+        )
+        st.dataframe(df_report[["product", "order"]], use_container_width=True)
 
-    with col_order_cancel:
-        if st.button("✖", key=f"remove_{i}"):
-            ts = datetime.now(ZoneInfo("Asia/Jerusalem"))
-            sheet.append_row([ts.isoformat(), ts.date().isoformat(), product, 0, 0, "cancel_order"])
-            st.info(f"🚫 בוטל רכישה: {product}")
+        for row in st.session_state.rows_to_order:
+            try:
+                sheet.append_row(row)
+            except Exception as e:
+                st.error(f"❌ שגיאה בשמירה ({row[1]}): {e}")
 
-    st.markdown("---")
+        st.session_state.rows_to_order = []
 
-# ---------- Действие: Отчёт на сегодня ----------
-st.subheader("📋 דוח מלאי")
-if st.button("הפק דוח"):
+# דוח מלאי
+st.markdown("---")
+if st.button("📦 הפקת דוח מלאי נוכחי"):
     try:
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
         if "timestamp" not in df.columns:
-            st.warning("⚠️ הטבלה אינה כוללת עמודת timestamp.")
+            st.warning("🔴 חסרה עמודת timestamp.")
+        elif df.empty:
+            st.info("📭 אין נתונים זמינים.")
         else:
-            df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-            today = datetime.now(ZoneInfo("Asia/Jerusalem")).date()
-            report = df[df["timestamp"].dt.date == today]
-            st.dataframe(report, use_container_width=True)
+            df_today = df[df["timestamp"].str.startswith(datetime.now().strftime("%Y-%m-%d"))]
+            stock_df = df_today.groupby("product")["fact"].sum().reset_index()
+            stock_df.columns = ["מוצר", "סה\"כ מלאי"]
+            st.dataframe(stock_df, use_container_width=True)
     except Exception as e:
         st.error(f"שגיאה בדוח: {e}")

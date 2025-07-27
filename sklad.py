@@ -51,7 +51,7 @@ for i, (label, name) in enumerate(products):
     st.markdown("------")
     cols = st.columns([3, 2, 3, 2, 2, 1, 1])
     with cols[0]:
-        st.markdown(f"<h2 style='text-align:right; font-size:32px;'>{label}</h2>", unsafe_allow_html=True)
+        st.markdown(f"**{label}**")
 
     with cols[1]:
         st.number_input("מלאי צפוי (AI)", value=0.0, step=0.5, disabled=True, key=f"ai_stock_{i}")
@@ -76,7 +76,7 @@ for i, (label, name) in enumerate(products):
                     st.error(f"❌ שגיאה בשמירה: {e}")
         with bcol2:
             if st.button("בטל", key=f"cancel_fact_{i}"):
-                st.info(f"🔁 לא נשמר. ניתן לעדכן שוב אם צריך.")
+                st.warning(f"🔁 לא נשמר. יש לעדכן מחדש אם צריך.")
 
     with cols[3]:
         st.number_input("תחזית רכישה (AI)", value=0.0, step=0.5, disabled=True, key=f"ai_order_{i}")

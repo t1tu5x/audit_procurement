@@ -17,7 +17,7 @@ except Exception as e:
 
 # Интерфейс
 st.set_page_config(layout="wide")
-st.title("👨‍🍳 ניהול מלאי למטבח מקצועי")
+st.markdown("<h1 style='text-align:right; font-size:42px;'>📦 מחסן מלון גולן – ירקות ופירות 🧑‍🍳</h1>", unsafe_allow_html=True)
 
 products = [
     ("🍅 עגבניות", "עגבניות"),

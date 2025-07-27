@@ -12,6 +12,8 @@ try:
     sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1OX_vT9Qcb51niAQ8ACcB5xTs9LuqNWrQOwAxZpJNLyw/edit").sheet1
 except Exception as e:
     st.error("❌ Ошибка подключения к Google Sheets")
+    import traceback
+    st.text(traceback.format_exc())
     st.stop()
 
 # ---------- Продукты ----------

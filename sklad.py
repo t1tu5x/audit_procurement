@@ -28,7 +28,6 @@ except Exception as e:
 st.set_page_config(layout="wide")
 st.title("👨‍🍳 ניהול מלאי למטבח מקצועי")
 
-# ---------- רשימת מוצרים ----------
 products = [
     ("🍅 עגבניות", "עגבניות"),
     ("🥒 מלפפונים", "מלפפונים"),
@@ -54,9 +53,6 @@ products = [
     ("🍑 אפרסקים", "אפרסקים")
 ]
 
-# ---------- UI ----------
-st.markdown("### 📋 רשימת מוצרים")
-
 if "rows_to_order" not in st.session_state:
     st.session_state["rows_to_order"] = []
 
@@ -72,7 +68,10 @@ for i, (label, name) in enumerate(products):
 
     with cols[2]:
         fact_key = f"fact_{i}"
-        fact = st.number_input("מלאי בפועל", value=0.0, step=0.5, key=fact_key)
+        if fact_key not in st.session_state:
+            st.session_state[fact_key] = 0.0
+
+        fact = st.number_input("מלאי בפועל", value=st.session_state[fact_key], step=0.5, key=fact_key)
 
         btn_cols = st.columns(2)
         with btn_cols[0]:
@@ -88,10 +87,11 @@ for i, (label, name) in enumerate(products):
                     st.success(f"📝 נשמר מלאי: {name} = {fact}")
                 except Exception as e:
                     st.error(f"❌ שגיאה בשמירה: {e}")
-
         with btn_cols[1]:
             if st.button("בטל", key=f"cancel_fact_{i}"):
-                st.session_state[fact_key] = 0.0
+                st.warning(f"🔁 מלאי לא נשמר עבור: {name}")
+                # Вместо изменения session_state напрямую, обновляем через input
+                st.experimental_rerun()
 
     with cols[3]:
         st.number_input("תחזית רכישה (AI)", value=0.0, step=0.5, disabled=True, key=f"ai_order_{i}")
@@ -142,12 +142,14 @@ if st.button("📦 הפקת דוח מלאי נוכחי"):
     try:
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
-        if not df.empty:
+        if "timestamp" not in df.columns:
+            st.warning("🔴 חסר עמודת timestamp. ודא שכותרות הגיליון קיימות.")
+        elif df.empty:
+            st.info("📭 אין נתונים זמינים.")
+        else:
             df_today = df[df["timestamp"].str.startswith(datetime.now().strftime("%Y-%m-%d"))]
             stock_df = df_today.groupby("product")["fact"].sum().reset_index()
             stock_df.columns = ["מוצר", "סה\"כ מלאי"]
             st.dataframe(stock_df, use_container_width=True)
-        else:
-            st.info("📭 אין נתונים זמינים.")
     except Exception as e:
         st.error(f"שגיאה בדוח: {e}")

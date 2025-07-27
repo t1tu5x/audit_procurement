@@ -28,7 +28,7 @@ except Exception as e:
 st.set_page_config(layout="wide")
 st.title("👨‍🍳 ניהול מלאי למטבח מקצועי")
 
-# ---------- Продукты ----------
+# ---------- רשימת מוצרים ----------
 products = [
     ("🍅 עגבניות", "עגבניות"),
     ("🥒 מלפפונים", "מלפפונים"),
@@ -71,7 +71,27 @@ for i, (label, name) in enumerate(products):
         st.number_input("מלאי צפוי (AI)", value=0.0, step=0.5, disabled=True, key=f"ai_stock_{i}")
 
     with cols[2]:
-        st.number_input("מלאי בפועל", value=0.0, step=0.5, key=f"fact_{i}")
+        fact_key = f"fact_{i}"
+        fact = st.number_input("מלאי בפועל", value=0.0, step=0.5, key=fact_key)
+
+        col_save, col_cancel = st.columns(2)
+        with col_save:
+            if st.button("שמור", key=f"save_fact_{i}"):
+                now = datetime.now()
+                try:
+                    sheet.append_row([
+                        now.strftime("%Y-%m-%d %H:%M:%S"),
+                        name,
+                        fact,
+                        0.0
+                    ])
+                    st.success(f"📝 נשמר מלאי: {name} = {fact}")
+                except Exception as e:
+                    st.error(f"❌ שגיאה בשמירה: {e}")
+
+        with col_cancel:
+            if st.button("בטל", key=f"cancel_fact_{i}"):
+                st.session_state[fact_key] = 0.0
 
     with cols[3]:
         st.number_input("תחזית רכישה (AI)", value=0.0, step=0.5, disabled=True, key=f"ai_order_{i}")
@@ -89,16 +109,15 @@ for i, (label, name) in enumerate(products):
                 st.session_state[f"order_{i}"]
             ]
             st.session_state.rows_to_order.append(row)
-            st.success(f"✅ נוסף: {name}")
+            st.success(f"✅ נוסף לרכישה: {name}")
 
     with cols[6]:
-        if st.button("✖", key=f"cancel_{name}"):
-            st.session_state[f"fact_{i}"] = 0.0
+        if st.button("✖", key=f"cancel_order_{name}"):
             st.session_state[f"order_{i}"] = 0.0
 
-# ---------- סיכום ודוח ----------
+# ---------- דוח רכישה ----------
 st.markdown("---")
-if st.button("📤 הפקת דוח לרכישה"):
+if st.button("📤 הפקת דוח רכישה"):
     if not st.session_state.rows_to_order:
         st.warning("אין שורות להזמנה.")
     else:
@@ -116,3 +135,19 @@ if st.button("📤 הפקת דוח לרכישה"):
                 st.error(f"❌ שגיאה בשמירה ({row[1]}): {e}")
 
         st.session_state.rows_to_order = []
+
+# ---------- דוח מלאי לפי תאריך ----------
+st.markdown("---")
+if st.button("📦 הפקת דוח מלאי נוכחי"):
+    try:
+        data = sheet.get_all_records()
+        df = pd.DataFrame(data)
+        if not df.empty:
+            df_today = df[df["timestamp"].str.startswith(datetime.now().strftime("%Y-%m-%d"))]
+            stock_df = df_today.groupby("product")["fact"].sum().reset_index()
+            stock_df.columns = ["מוצר", "סה\"כ מלאי"]
+            st.dataframe(stock_df, use_container_width=True)
+        else:
+            st.info("📭 אין נתונים זמינים.")
+    except Exception as e:
+        st.error(f"שגיאה בדוח: {e}")

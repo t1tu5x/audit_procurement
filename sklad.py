@@ -18,7 +18,7 @@ except Exception as e:
 st.set_page_config(layout="wide")
 st.markdown("""
     <h1 style='text-align:right; font-size:40px;'>📦 מחסן מלון גולן! 🥬🍎🍋</h1>
-    <h3 style='text-align:right; color:gray;'>👨‍🍳 שף יהודה</h3>
+    <h3 style='text-align:right; color:gray;'>Titus Solutions</h3>
 """, unsafe_allow_html=True)
 
 # Загрузка CSV с продуктами
